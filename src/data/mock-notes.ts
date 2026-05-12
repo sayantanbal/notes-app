@@ -37,3 +37,8 @@ export const MOCK_NOTES: Note[] = [
     updatedAt: Date.now() - 1000 * 60 * 8,
   },
 ];
+
+export function getMockNoteById(id: string | undefined): Note | null {
+  if (id == null || id === '') return null;
+  return MOCK_NOTES.find((n) => n.id === id) ?? null;
+}

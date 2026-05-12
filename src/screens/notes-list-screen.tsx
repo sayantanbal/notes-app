@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   FlatList,
   ListRenderItem,
+  Platform,
   Pressable,
   StyleSheet,
   Switch,
@@ -14,11 +15,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset, Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { BottomTabInset, Colors, MaxContentWidth, Spacing, TABLET_MIN_WIDTH } from '@/constants/theme';
 import { useAppTheme } from '@/context/app-theme';
 import { MOCK_NOTES, type Note } from '@/data/mock-notes';
-
-const TABLET_MIN_WIDTH = 600;
 
 function formatNoteDate(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, {
@@ -31,7 +30,7 @@ export function NotesListScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const systemScheme = useColorScheme();
-  const { effectiveScheme, setSchemeOverride } = useAppTheme();
+  const { effectiveScheme, isFollowingSystem, setSchemeOverride, clearOverride } = useAppTheme();
   const [query, setQuery] = useState('');
 
   const isWide = width >= TABLET_MIN_WIDTH;
@@ -86,6 +85,9 @@ export function NotesListScreen() {
           color: Colors[effectiveScheme].text,
           fontSize: 16,
         },
+        themeBlock: {
+          marginBottom: Spacing.three,
+        },
         themeRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -94,13 +96,14 @@ export function NotesListScreen() {
           paddingHorizontal: Spacing.three,
           borderRadius: Spacing.three,
           backgroundColor: Colors[effectiveScheme].backgroundElement,
-          marginBottom: Spacing.three,
         },
         themeRowWide: {
           paddingVertical: Spacing.three,
         },
         themeLabelWrap: {
           gap: Spacing.half,
+          flex: 1,
+          paddingRight: Spacing.two,
         },
         themeLabel: {
           fontSize: 16,
@@ -110,6 +113,19 @@ export function NotesListScreen() {
         themeHint: {
           fontSize: 12,
           color: Colors[effectiveScheme].textSecondary,
+        },
+        useDeviceRow: {
+          marginTop: Spacing.two,
+          alignSelf: 'flex-start',
+        },
+        useDeviceText: {
+          fontSize: 14,
+          fontWeight: '600',
+          color: Colors[effectiveScheme].textSecondary,
+          textDecorationLine: 'underline',
+        },
+        useDevicePressed: {
+          opacity: 0.75,
         },
         listContent: {
           paddingBottom: BottomTabInset + Spacing.four,
@@ -168,10 +184,25 @@ export function NotesListScreen() {
     [contentMaxWidth, effectiveScheme, isWide],
   );
 
+  const cardRipple =
+    Platform.OS === 'android'
+      ? {
+          color:
+            effectiveScheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+          foreground: true,
+        }
+      : undefined;
+
   const renderItem: ListRenderItem<Note> = ({ item }) => (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push('/editor')}
+      onPress={() =>
+        router.push({
+          pathname: '/editor',
+          params: { noteId: item.id },
+        })
+      }
+      android_ripple={cardRipple}
       style={({ pressed }) => [pressed ? styles.cardPressed : null]}>
       <View
         style={StyleSheet.compose(
@@ -191,6 +222,10 @@ export function NotesListScreen() {
 
   const systemLabel =
     systemScheme === 'dark' ? 'Dark' : systemScheme === 'light' ? 'Light' : 'Unspecified';
+
+  const themeHint = isFollowingSystem
+    ? `Following device · Device is ${systemLabel}`
+    : `Manual appearance · Device is ${systemLabel}`;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -212,19 +247,34 @@ export function NotesListScreen() {
             clearButtonMode="while-editing"
           />
 
-          <View
-            style={
-              isWide ? StyleSheet.compose(styles.themeRow, styles.themeRowWide) : styles.themeRow
-            }>
-            <View style={styles.themeLabelWrap}>
-              <Text style={styles.themeLabel}>Dark mode</Text>
-              <Text style={styles.themeHint}>{`Device: ${systemLabel}`}</Text>
+          <View style={styles.themeBlock}>
+            <View
+              style={
+                isWide ? StyleSheet.compose(styles.themeRow, styles.themeRowWide) : styles.themeRow
+              }>
+              <View style={styles.themeLabelWrap}>
+                <Text style={styles.themeLabel}>Dark mode</Text>
+                <Text style={styles.themeHint}>{themeHint}</Text>
+              </View>
+              <Switch
+                accessibilityLabel="Toggle dark mode"
+                value={effectiveScheme === 'dark'}
+                onValueChange={(enabled) => setSchemeOverride(enabled ? 'dark' : 'light')}
+              />
             </View>
-            <Switch
-              accessibilityLabel="Toggle dark mode"
-              value={effectiveScheme === 'dark'}
-              onValueChange={(enabled) => setSchemeOverride(enabled ? 'dark' : 'light')}
-            />
+            {!isFollowingSystem ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Use device appearance for light and dark mode"
+                onPress={clearOverride}
+                android_ripple={cardRipple}
+                style={({ pressed }) => [
+                  styles.useDeviceRow,
+                  pressed ? styles.useDevicePressed : null,
+                ]}>
+                <Text style={styles.useDeviceText}>Use device appearance</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           <FlatList

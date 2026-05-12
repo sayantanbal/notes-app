@@ -5,6 +5,8 @@ export type ColorSchemeName = 'light' | 'dark';
 
 type AppThemeContextValue = {
   effectiveScheme: ColorSchemeName;
+  /** When true, `useColorScheme()` drives appearance (no manual override). */
+  isFollowingSystem: boolean;
   setSchemeOverride: (scheme: ColorSchemeName) => void;
   clearOverride: () => void;
 };
@@ -29,13 +31,16 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     setOverride(null);
   }, []);
 
+  const isFollowingSystem = override === null;
+
   const value = useMemo(
     () => ({
       effectiveScheme,
+      isFollowingSystem,
       setSchemeOverride,
       clearOverride,
     }),
-    [effectiveScheme, setSchemeOverride, clearOverride],
+    [effectiveScheme, isFollowingSystem, setSchemeOverride, clearOverride],
   );
 
   return <AppThemeContext.Provider value={value}>{children}</AppThemeContext.Provider>;

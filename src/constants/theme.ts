@@ -63,3 +63,6 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/** Minimum width (dp) treated as tablet / large layout for responsive spacing. */
+export const TABLET_MIN_WIDTH = 600;

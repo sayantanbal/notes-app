@@ -1,35 +1,64 @@
 # Notes App (Expo + React Native)
 
-A simple **notes listing** and **note editor** UI built with **Expo Router** and **React Native**. Two tab screens (no separate navigation stack): **Notes** and **Editor**.
+A **notes listing** and **note editor** UI built with **Expo Router** and **React Native**. The app uses two tab destinations—**Notes** and **Editor**—so you can move between list and writing surfaces without a separate stack navigator. Data is **mock-only** (no backend or local persistence).
 
-## Requirements coverage
+**Made for Expo SDK 55** (`expo` ~55.x in `package.json`), including Expo Router and the surrounding Expo-managed native stack for that release.
+
+For a deeper walkthrough of **features**, **design decisions**, and **how each part is implemented**, see **[`docs/FEATURES_AND_IMPLEMENTATION.md`](docs/FEATURES_AND_IMPLEMENTATION.md)**.
+
+---
+
+## Features at a glance
+
+| Area | What you get |
+|------|----------------|
+| **Notes list** | Scrollable `FlatList`, live search, tappable cards (title, preview, date), dark/light `Switch`, return to **device appearance** when you have overridden the theme |
+| **Editor** | Title and multiline body, `KeyboardAvoidingView` + `ScrollView`, `ImageBackground` header, Back/Save `Pressable`s, optional **Writing focus** mode, open from a card with **`noteId`** to edit mock data |
+| **Theme** | `useColorScheme()` drives the default; manual override is app-wide and reflected in navigation chrome |
+| **Layout** | `useWindowDimensions()` for tablet-style spacing and typography; content capped with `MaxContentWidth` |
+| **Polish** | `StyleSheet.create` / `compose` / `flatten`, `android_ripple`, haptic feedback on Save (native), Android `adjustResize` for the keyboard |
+
+---
+
+## Requirements coverage (assignment-style)
 
 | Area | Implementation |
 |------|----------------|
-| List screen | `FlatList`, search `TextInput`, `Pressable` note cards, theme `Switch` |
-| Editor screen | Title/body `TextInput`s, `KeyboardAvoidingView`, `ScrollView`, `ImageBackground` header, `Pressable` Back/Save |
-| Theme | `useColorScheme()` in `AppThemeProvider`; `Switch` sets a manual light/dark override for the whole app |
-| Responsive | `useWindowDimensions()` on both screens (wider padding and typography on large widths) |
-| Styling | `StyleSheet.create` (via `useMemo` where colors depend on theme), plus `StyleSheet.compose` and `StyleSheet.flatten` |
+| List screen | `FlatList`, search `TextInput`, `Pressable` note cards (`android_ripple`), theme `Switch`, **Use device appearance** when overriding system theme |
+| Editor screen | Title/body `TextInput`s, `KeyboardAvoidingView`, `ScrollView`, `ImageBackground` (`imageStyle` from `StyleSheet`), `Pressable` Back/Save, **Writing focus** `Switch`, optional `noteId` to edit a mock note |
+| Theme | `useColorScheme()` in `AppThemeProvider`; `Switch` sets override; **`isFollowingSystem`** + **clear override** on the list |
+| Responsive | `useWindowDimensions()` + shared **`TABLET_MIN_WIDTH`** in `constants/theme.ts` |
+| Styling | `StyleSheet.create` (via `useMemo` where theme/size changes), `StyleSheet.compose`, `StyleSheet.flatten` |
+| Android keyboard | `windowSoftInputMode: adjustResize` in `app.json`; `KeyboardAvoidingView` **`behavior`** on **iOS only** |
+| Feedback | `expo-haptics` on Save (native) |
+
+---
 
 ## Project layout
 
-- [`src/app/index.tsx`](src/app/index.tsx) — Notes tab route  
-- [`src/app/editor.tsx`](src/app/editor.tsx) — Editor tab route  
-- [`src/app/_layout.tsx`](src/app/_layout.tsx) — Tab layout, splash, navigation theme, `AppThemeProvider`  
-- [`src/screens/notes-list-screen.tsx`](src/screens/notes-list-screen.tsx) — List UI  
-- [`src/screens/note-editor-screen.tsx`](src/screens/note-editor-screen.tsx) — Editor UI  
-- [`src/context/app-theme.tsx`](src/context/app-theme.tsx) — Theme override + system scheme  
-- [`src/data/mock-notes.ts`](src/data/mock-notes.ts) — Sample notes (no persistence)  
-- [`src/components/app-tabs.tsx`](src/components/app-tabs.tsx) / [`app-tabs.web.tsx`](src/components/app-tabs.web.tsx) — Native vs web tab chrome  
+| Path | Role |
+|------|------|
+| [`src/app/index.tsx`](src/app/index.tsx) | Notes tab route |
+| [`src/app/editor.tsx`](src/app/editor.tsx) | Editor tab route |
+| [`src/app/_layout.tsx`](src/app/_layout.tsx) | Tabs, splash, navigation theme, `AppThemeProvider` |
+| [`src/screens/notes-list-screen.tsx`](src/screens/notes-list-screen.tsx) | List UI |
+| [`src/screens/note-editor-screen.tsx`](src/screens/note-editor-screen.tsx) | Editor UI |
+| [`src/context/app-theme.tsx`](src/context/app-theme.tsx) | System scheme + manual override |
+| [`src/data/mock-notes.ts`](src/data/mock-notes.ts) | Sample notes + `getMockNoteById` |
+| [`src/constants/theme.ts`](src/constants/theme.ts) | Colors, spacing, `TABLET_MIN_WIDTH`, tab inset |
+| [`src/components/app-tabs.tsx`](src/components/app-tabs.tsx) / [`app-tabs.web.tsx`](src/components/app-tabs.web.tsx) | Native vs web tab chrome |
 
-## Core components and hooks used
+---
+
+## Core components and hooks
 
 **Components:** `SafeAreaView`, `View`, `Text`, `TextInput`, `FlatList`, `Pressable`, `Switch`, `KeyboardAvoidingView`, `ScrollView`, `ImageBackground`.
 
-**Hooks:** `useColorScheme`, `useWindowDimensions`, `useMemo`, `useState`, `useCallback`, `useSafeAreaInsets` (editor), Expo Router `useRouter`.
+**Hooks:** `useColorScheme`, `useWindowDimensions`, `useMemo`, `useState`, `useEffect`, `useCallback`, `useSafeAreaInsets`, Expo Router `useRouter`, `useLocalSearchParams`.
 
-**APIs:** `StyleSheet.create`, `StyleSheet.compose`, `StyleSheet.flatten`, `Platform`, `Alert` (Save).
+**APIs / libraries:** `StyleSheet.create`, `StyleSheet.compose`, `StyleSheet.flatten`, `Platform`, `Alert`, `expo-haptics` (Save on native).
+
+---
 
 ## Run locally
 
@@ -47,35 +76,32 @@ bun start
 # or: npx expo start
 ```
 
-Then open **iOS simulator**, **Android emulator**, **Expo Go**, or press **`w`** for web.
+Open **iOS simulator**, **Android emulator**, **Expo Go**, or press **`w`** for web.
 
 ### Scripts
 
 | Command | Description |
 |---------|-------------|
 | `bun start` / `npm run start` | Expo dev server |
-| `bun run android` / `npm run android` | Start on Android |
-| `bun run ios` / `npm run ios` | Start on iOS |
-| `bun run web` / `npm run web` | Start on web |
+| `bun run android` / `npm run android` | Android |
+| `bun run ios` / `npm run ios` | iOS |
+| `bun run web` / `npm run web` | Web |
 | `bun run lint` / `npm run lint` | ESLint (`eslint-config-expo`) |
 
-## UI enhancements (beyond minimum)
-
-- Manual dark mode switch with a short **device appearance** hint (system vs effective theme).  
-- Note cards with border, preview snippet, and formatted date/time.  
-- Empty state when search has no matches.  
-- Editor header uses an **image background** with a readable overlay; long body text scrolls while the keyboard is open.
+---
 
 ## Assignment submission
 
 Replace placeholders with your own links:
 
-- **Repository:** `https://github.com/<you>/notes-app`  
-- **Demo video:** `<your video URL>`  
+- **Repository:** `https://github.com/<you>/notes-app`
+- **Demo video:** `<your video URL>`
 
-Persistence and real navigation between unrelated stacks are **out of scope**; data is mock-only and tabs switch between the two screens.
+**Out of scope:** persistence, auth, and “real” stack navigation beyond tabs. The assignment only required two UIs; tabs are an extra convenience.
+
+---
 
 ## Learn more
 
-- [Expo documentation](https://docs.expo.dev/)  
-- [Expo Router](https://docs.expo.dev/router/introduction/)  
+- [Expo documentation](https://docs.expo.dev/)
+- [Expo Router](https://docs.expo.dev/router/introduction/)

@@ -94,8 +94,7 @@ Open **iOS simulator**, **Android emulator**, **Expo Go**, or press **`w`** for 
 
 Replace placeholders with your own links:
 
-- **Repository:** `https://github.com/<you>/notes-app`
-- **Demo video:** `<your video URL>`
+- **Repository:** `https://github.com/sayanatanbal/notes-app`
 
 **Out of scope:** persistence, auth, and “real” stack navigation beyond tabs. The assignment only required two UIs; tabs are an extra convenience.
 
